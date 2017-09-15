@@ -4,6 +4,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 
+import javax.swing.JSlider;
+import javax.swing.plaf.SliderUI;
+
 @SuppressWarnings("serial")
 public class ViewLife extends Frame {
 	ModelLife m_model;
@@ -18,10 +21,157 @@ public class ViewLife extends Frame {
 		m_model = model;
 		stoneComponents = new StoneComponent[m_model.getRowCount()][m_model.getColumnCount()];
 
+		loadingScreenRoutine();
+		createMenuBar();
+		layoutRoutine();
+		pack();
+		setSize(1200, 800);
+		setLocationRelativeTo(null); // eike
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				dispose();
+			}
+
+			@Override
+			public void windowClosed(WindowEvent e) {
+				System.exit(0);
+			}
+		});
+		setVisible(true);
+	}
+
+	@Override
+	public void update(Graphics g) {
+		if (m_ImgBuffer == null) {
+			m_ImgBuffer = createImage(getWidth(), getHeight());
+		}
+		Graphics bufferGraphics = m_ImgBuffer.getGraphics();
+		bufferGraphics.clearRect(0, 0, getWidth(), getHeight());
+		paint(bufferGraphics);
+		g.drawImage(m_ImgBuffer, 0, 0, this);
+	}
+
+	@Override
+	public void paint(Graphics g) {
+		for (int i = 0; i < stoneComponents.length; ++i) {
+			for (int j = 0; j < stoneComponents[i].length; j++) {
+				stoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
+				stoneComponents[i][j].update(stoneComponents[i][j].getGraphics());
+			}
+		}
+	}
+
+	private Color determineColor(Stone stone) {
+		if (stone instanceof AlwaysStone)
+			return Color.GREEN;
+		if (stone instanceof NeverStone)
+			return Color.WHITE;
+		int roundsAlive = stone.getRoundsAlive();
+		if (roundsAlive == -1)
+			return Color.WHITE;
+		if (roundsAlive == 0)
+			return Color.MAGENTA;
+		if (roundsAlive == 1)
+			return Color.ORANGE;
+		if (roundsAlive == 2)
+			return Color.YELLOW;
+		if (roundsAlive == 3)
+			return Color.GREEN;
+		return Color.GREEN;
+		// int roundsAlive = stone.getRoundsAlive();
+		// if (roundsAlive == -1)
+		// return Color.WHITE;
+		// else
+		// return Color.BLACK;
+	}
+
+	private void determineStaticFields(int i, int j) {
+		if (m_model.getStone(i, j) instanceof AlwaysStone || m_model.getStone(i, j) instanceof NeverStone) {
+
+			stoneComponents[i][j].setStatic();
+		}
+
+	}
+	
+	private void createMenuBar(){
+		MenuBar menuBar = new MenuBar();
+		Menu fileMenu = new Menu("File");
+		Menu loadMenu = new Menu("Presets");
+		MenuItem newItem = new MenuItem("New");
+		MenuItem saveItem = new MenuItem("Save");
+		MenuItem loadItem = new MenuItem("Load");
+		MenuItem quitItem = new MenuItem("Quit");
+		newItem.addActionListener(e -> {
+			m_model.resetField();
+		});
+		saveItem.addActionListener(e -> {
+
+		});
+		loadItem.addActionListener(e -> {
+
+		});
+		quitItem.addActionListener(e -> {
+			dispose();
+			System.exit(0);
+		});
+		fileMenu.add(newItem);
+		fileMenu.add(saveItem);
+		fileMenu.add(loadItem);
+		fileMenu.addSeparator();
+		fileMenu.add(quitItem);
+		MenuItem gunItem = new MenuItem("Gun");
+		MenuItem specialItem = new MenuItem("Speciale");
+		gunItem.addActionListener(e->{
+			
+		});
+		specialItem.addActionListener(e->{
+			
+		});
+		loadMenu.add(gunItem);
+		loadMenu.add(specialItem);
+		menuBar.add(fileMenu);
+		menuBar.add(loadMenu);
+		setMenuBar(menuBar);
+	}
+	private void layoutRoutine(){
+		setLayout(new BorderLayout()); // Top Layout Manager
+		Panel btmPanel = new Panel();
+		btmPanel.setLayout(new FlowLayout()); // Flow layout for the buttons
+												// below the stonefield
+		Panel rPanel;
+		rPanel = new Panel(new GridLayout(3, 1));
+		btmPanel.add(new Button("Start"));
+		btmPanel.add(new Button("Pause"));
+		btmPanel.add(new Button("Restart"));
+		JSlider slider = new JSlider(0,2000,1000);
+		slider.addChangeListener(e->{
+			System.out.println(((JSlider)e.getSource()).getValue());
+		});
+		
+		
+		btmPanel.add(slider);
+		rPanel.add(new Button("ok"));
+		add(BorderLayout.SOUTH, btmPanel);
+		add(BorderLayout.EAST, rPanel);
+
+		Panel fieldPanel = new Panel();
+		fieldPanel.setLayout(new GridLayout(m_model.getRowCount(), m_model.getColumnCount(), 3, 3));
+		for (int i = 0; i < stoneComponents.length; ++i) {
+			for (int j = 0; j < stoneComponents[i].length; j++) {
+				stoneComponents[i][j] = new StoneComponent();
+				determineStaticFields(i, j);
+				fieldPanel.add(stoneComponents[i][j]);
+			}
+		}
+		add(BorderLayout.CENTER, fieldPanel);
+	}
+	
+
+	private void loadingScreenRoutine(){
 		new Window(this) {
 			{
 				setSize(700, 500);
-
 				m_loadingTextImage = getToolkit().createImage(getClass().getResource("/loadingText.png"));
 				MediaTracker mt = new MediaTracker(this);
 				mt.addImage(m_loadingTextImage, 1);
@@ -87,98 +237,6 @@ public class ViewLife extends Frame {
 			}
 
 		};
-
-		setLayout(new BorderLayout()); // Top Layout Manager
-		Panel btmPanel = new Panel();
-		btmPanel.setLayout(new FlowLayout()); // Flow layout for the buttons
-												// below the stonefield
-		Panel rPanel;
-		rPanel = new Panel(new GridLayout(3, 1));
-		btmPanel.add(new Button("Start"));
-		btmPanel.add(new Button("Pause"));
-		btmPanel.add(new Button("Restart"));
-		rPanel.add(new Button("ok"));
-		add(BorderLayout.SOUTH, btmPanel);
-		add(BorderLayout.EAST, rPanel);
-
-		Panel fieldPanel = new Panel();
-		fieldPanel.setLayout(new GridLayout(m_model.getRowCount(), m_model.getColumnCount(), 3, 3));
-		for (int i = 0; i < stoneComponents.length; ++i) {
-			for (int j = 0; j < stoneComponents[i].length; j++) {
-				stoneComponents[i][j] = new StoneComponent();
-				determineStaticFields(i, j);
-				fieldPanel.add(stoneComponents[i][j]);
-			}
-		}
-		add(BorderLayout.CENTER, fieldPanel);
-		pack();
-		setSize(1200, 800);
-		setLocationRelativeTo(null); // eike
-		addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				dispose();
-			}
-
-			@Override
-			public void windowClosed(WindowEvent e) {
-				System.exit(0);
-			}
-		});
-		setVisible(true);
-	}
-
-	@Override
-	public void update(Graphics g) {
-		if (m_ImgBuffer == null) {
-			m_ImgBuffer = createImage(getWidth(), getHeight());
-		}
-		Graphics bufferGraphics = m_ImgBuffer.getGraphics();
-		bufferGraphics.clearRect(0, 0, getWidth(), getHeight());
-		paint(bufferGraphics);
-		g.drawImage(m_ImgBuffer, 0, 0, this);
-	}
-
-	@Override
-	public void paint(Graphics g) {
-		for (int i = 0; i < stoneComponents.length; ++i) {
-			for (int j = 0; j < stoneComponents[i].length; j++) {
-				stoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
-				stoneComponents[i][j].update(stoneComponents[i][j].getGraphics());
-			}
-		}
-	}
-
-	private Color determineColor(Stone stone) {
-		if (stone instanceof AlwaysStone)
-			return Color.GREEN;
-		if (stone instanceof NeverStone)
-			return Color.WHITE;
-		int roundsAlive = stone.getRoundsAlive();
-		if (roundsAlive == -1)
-			return Color.WHITE;
-		if (roundsAlive == 0)
-			return Color.MAGENTA;
-		if (roundsAlive == 1)
-			return Color.ORANGE;
-		if (roundsAlive == 2)
-			return Color.YELLOW;
-		if (roundsAlive == 3)
-			return Color.GREEN;
-		return Color.GREEN;
-//		int roundsAlive = stone.getRoundsAlive();
-//		if (roundsAlive == -1)
-//			return Color.WHITE;
-//		else
-//			return Color.BLACK;
-	}
-
-	private void determineStaticFields(int i, int j) {
-		if (m_model.getStone(i, j) instanceof AlwaysStone || m_model.getStone(i, j) instanceof NeverStone) {
-			
-				stoneComponents[i][j].setStatic();
-		}
-
 	}
 
 }

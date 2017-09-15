@@ -5,17 +5,20 @@ public class ModelLife {
 	private int m_ColumnCount;
 	private Stone[][] m_Stones;
 	private double m_ChanceOfStaticFields;
-	
+	boolean resetOnNextCycle;
 	public ModelLife(int rows, int columns, double ChanceOfStaticFields){
 		m_Stones = new Stone[rows][columns];
 		m_RowCount = rows;
 		m_ColumnCount = columns;
 		m_ChanceOfStaticFields = ChanceOfStaticFields;
 		initilize();
-		refrenceAllNeighbours();
 	}
 	
-	private void initilize() {
+	private void initilize(){
+		createField();
+		refrenceAllNeighbours();
+	}
+	private void createField() {
 		int alive = 0;
 		int dead = 0;
 		int infectedCells = 0;
@@ -84,7 +87,14 @@ public class ModelLife {
 				
 			}
 		}
-		
+		if(resetOnNextCycle){
+			initilize();
+			resetOnNextCycle = false;
+		}
+	}
+	
+	public void resetField(){
+		resetOnNextCycle = true;
 	}
 
 	public Stone getStone(int i, int j) {	
