@@ -150,27 +150,27 @@ public class ViewLife extends Frame {
 	}
 
 	private Color determineColor(Stone stone) {
-//		if (stone instanceof AlwaysStone)
-//			return Color.GREEN;
-//		if (stone instanceof NeverStone)
-//			return Color.WHITE;
-//		int roundsAlive = stone.getRoundsAlive();
-//		if (roundsAlive == -1)
-//			return Color.WHITE;
-//		if (roundsAlive == 0)
-//			return Color.MAGENTA;
-//		if (roundsAlive == 1)
-//			return Color.ORANGE;
-//		if (roundsAlive == 2)
-//			return Color.YELLOW;
-//		if (roundsAlive == 3)
-//			return Color.GREEN;
-//		return Color.GREEN;
+		if (stone instanceof AlwaysStone)
+			return Color.GREEN;
+		if (stone instanceof NeverStone)
+			return Color.WHITE;
 		int roundsAlive = stone.getRoundsAlive();
 		if (roundsAlive == -1)
 			return Color.WHITE;
-		else
-			return Color.BLACK;
+		if (roundsAlive == 0)
+			return Color.MAGENTA;
+		if (roundsAlive == 1)
+			return Color.ORANGE;
+		if (roundsAlive == 2)
+			return Color.YELLOW;
+		if (roundsAlive == 3)
+			return Color.GREEN;
+		return Color.GREEN;
+//		int roundsAlive = stone.getRoundsAlive();
+//		if (roundsAlive == -1)
+//			return Color.WHITE;
+//		else
+//			return Color.BLACK;
 	}
 
 	private void determineStaticFields(int i, int j) {
