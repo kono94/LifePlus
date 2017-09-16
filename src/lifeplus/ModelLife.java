@@ -2,7 +2,7 @@ package lifeplus;
 
 public class ModelLife {
 	private int m_RowCount;
-	private int m_ColumnCount;
+	private int m_ColumnCount; 
 	private Stone[][] m_Stones;
 	private double m_ChanceOfStaticFields;
 	private boolean resetOnNextCycle;
