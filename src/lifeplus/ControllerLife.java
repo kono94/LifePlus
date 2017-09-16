@@ -20,7 +20,7 @@ public class ControllerLife {
 		m_GameThread = new Thread() {
 			@Override
 			public void run() {
-				try {
+				try { 
 					runGame();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
