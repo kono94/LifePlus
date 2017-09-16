@@ -2,8 +2,6 @@ package lifeplus;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Set;
-
 import javax.swing.JSlider;
 
 @SuppressWarnings("serial")
@@ -20,6 +18,7 @@ public class ViewLife extends Frame {
 	// ;? crazy? Buttons as fields to change Labels (pause->continue)
 	Button m_pausBtn;
 	Button m_startBtn;
+	Button m_restartBtn;
 
 	public void setController(ControllerLife c) {
 		m_Controller = c;
@@ -157,12 +156,12 @@ public class ViewLife extends Frame {
 		// ;in
 		m_pausBtn = new Button("  pause  ");
 		btmPanel.add(m_pausBtn);
-		Button restartBtn = new Button("restart");
-		btmPanel.add(restartBtn);
+		m_restartBtn = new Button("reset");
+		btmPanel.add(m_restartBtn);
 
-		JSlider slider = new JSlider(0, 2000, 1000);
-		slider.setMajorTickSpacing(500);
-		slider.createStandardLabels(500);
+		JSlider slider = new JSlider(0, 500, 300);
+		slider.setMajorTickSpacing(100);
+		slider.createStandardLabels(100);
 		slider.setPaintLabels(true);
 		slider.setPaintTicks(true);
 
@@ -260,22 +259,29 @@ public class ViewLife extends Frame {
 	}
 
 	private void applyListeners() {
-		m_startBtn.addActionListener(e -> {
+		m_startBtn.addActionListener(e -> {		
 			if (!m_Controller.getThread().isAlive())
 				m_Controller.getThread().start();
+			m_startBtn.setEnabled(false);
 		});
 
 		m_pausBtn.addActionListener(e -> {
-			if (m_model.isRunning()) {
-				m_model.stop();
+			if (m_Controller.isRunning()) {
+				m_Controller.stopGame();
 				m_pausBtn.setLabel(("continue"));
 				// ;in
 				// this.revalidate();
-			} else {
-				m_model.continueGame();
+			} else {				
+				m_Controller.continueGame();
 				((Button) e.getSource()).setLabel("pause");
 				// this.revalidate();
 			}
+		});
+		
+		m_restartBtn.addActionListener(e->{
+			// if (!m_Controller.getThread().isAlive())
+				m_Controller.restartGame();
+				m_pausBtn.setLabel("continue");
 		});
 
 	}
@@ -283,13 +289,15 @@ public class ViewLife extends Frame {
 	private class ButtonFrame extends Frame {
 		public ButtonFrame() {
 			setSize(300, 200);
-			Button oneMore = new Button("click");
+			Button oneMore = new Button("One more cycle");
 			oneMore.addActionListener(e -> {
-				if (m_model.isRunning()) {
-					m_model.stop();
+				if (m_Controller.isRunning()) {
+					m_Controller.stopGame();					
 					// ;in remember for exam LUL
-					((Button) e.getSource()).setLabel("continue");
-					// m_pausBtn.setLabel("continue");
+					//((Button) e.getSource()).setLabel("one");
+					 m_pausBtn.setLabel("continue");						
+				}else{
+					m_Controller.singleStep();
 				}
 			});
 			add(oneMore);

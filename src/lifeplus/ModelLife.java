@@ -5,8 +5,7 @@ public class ModelLife {
 	private int m_ColumnCount;
 	private Stone[][] m_Stones;
 	private double m_ChanceOfStaticFields;
-	private boolean stop;
-	boolean resetOnNextCycle;
+	private boolean resetOnNextCycle;
 	
 	public ModelLife(int rows, int columns, double ChanceOfStaticFields){
 		m_Stones = new Stone[rows][columns];
@@ -70,7 +69,6 @@ public class ModelLife {
 	}
 
 	public void nextCycle(){
-		if(stop) return;
 		boolean[][] tempNext = new boolean[m_RowCount][m_ColumnCount];
 		int[][] tempDiseaseNext = new int[m_RowCount][m_ColumnCount];
 		for (int y = 0; y < m_Stones.length; ++y)
@@ -98,19 +96,11 @@ public class ModelLife {
 	
 	public void resetField(){
 		resetOnNextCycle = true;
+	}	
+	public void hardReset(){
+		initilize();
 	}
-	
-	// ;? setter instead?
-	public void stop(){
-		stop = true;
-	}
-	
-	public void continueGame(){
-		stop = false;
-	}
-	public boolean isRunning(){
-		return !stop;
-	}
+
 	public Stone getStone(int i, int j) {	
 		return m_Stones[i][j];
 	}
