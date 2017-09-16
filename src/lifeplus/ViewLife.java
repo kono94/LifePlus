@@ -23,6 +23,7 @@ public class ViewLife extends Frame {
 	// ;? extra field or just local in constructor to call dispose();
 	private ButtonFrame buttonFrame;
 	private Panel m_FieldPanel;
+	private PopupMenu pop;
 
 	public ViewLife(ModelLife model, ControllerLife controller) {
 		m_SCREEN_WIDTH = (int) getToolkit().getScreenSize().getWidth();
@@ -33,8 +34,9 @@ public class ViewLife extends Frame {
 
 		buttonFrame = new ButtonFrame();
 		loadingScreenRoutine();
-		createMenuBar();
+		
 		layoutRoutine();
+		createMenuBar();
 		applyListeners();
 		pack();
 		setSize(1200, 800);
@@ -214,6 +216,7 @@ public class ViewLife extends Frame {
 		MenuItem muchItem = new MenuItem("80 x 100");
 		fewItem.addActionListener(e -> {
 			m_Controller.newFieldSize(10, 20);
+			
 		});
 		decentItem.addActionListener(e -> {
 			m_Controller.newFieldSize(25, 40);
@@ -234,8 +237,20 @@ public class ViewLife extends Frame {
 		menuBar.add(windowMenu);
 		menuBar.add(stoneMenu);
 		setMenuBar(menuBar);
+		
+		 pop = new PopupMenu();		
+		 pop.add("kee");
+		 add(pop);
+		 enableEvents(AWTEvent.MOUSE_EVENT_MASK);
 	}
-
+	
+	protected void processMouseEvent(MouseEvent e){
+		System.out.println("dd");
+		if(e.isPopupTrigger()){
+			pop.show(e.getComponent(), e.getX(), e.getY());
+		}
+		super.processMouseEvent(e);
+	}
 	private void layoutRoutine() {
 		setLayout(new BorderLayout()); // Top Layout Manager
 		Panel btmPanel = new Panel();
