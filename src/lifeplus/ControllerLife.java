@@ -5,7 +5,7 @@ package lifeplus;
  * ;in = funny constructs etc
  */
 public class ControllerLife {
-	private int m_SleepTime = 500;
+	private int m_SleepTime = 600;
 	private ModelLife m_ModelLife;
 	private ViewLife m_ViewLife;
 	private Thread m_GameThread;
