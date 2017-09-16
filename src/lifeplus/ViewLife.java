@@ -8,27 +8,30 @@ import javax.swing.JSlider;
 public class ViewLife extends Frame {
 	private ModelLife m_model;
 	private ControllerLife m_Controller;
-	private StoneComponent[][] stoneComponents;
+	private StoneComponent[][] m_StoneComponents;
 	private Image m_Img; // Double Buffering
 	private Image m_ImgBuffer; // -II-
 	private Image m_loadingTextImage;
 	private int m_iWidth = 0;
 	private int m_iMaxWidth = 0;
-
+	private final int m_SCREEN_WIDTH;
+	private final int m_SCREEN_HEIGHT;
 	// ;? crazy? Buttons as fields to change Labels (pause->continue)
-	Button m_pausBtn;
-	Button m_startBtn;
-	Button m_restartBtn;
+	private Button m_pausBtn;
+	private Button m_startBtn;
+	private Button m_restartBtn;
+	// ;? extra field or just local in constructor to call dispose();
+	private ButtonFrame buttonFrame;
+	private Panel m_FieldPanel;
 
-	public void setController(ControllerLife c) {
-		m_Controller = c;
-	}
-
-	public ViewLife(ModelLife model) {
-		new ButtonFrame();
+	public ViewLife(ModelLife model, ControllerLife controller) {
+		m_SCREEN_WIDTH = (int) getToolkit().getScreenSize().getWidth();
+		m_SCREEN_HEIGHT = (int) getToolkit().getScreenSize().getHeight() - 30;
 		m_model = model;
-		stoneComponents = new StoneComponent[m_model.getRowCount()][m_model.getColumnCount()];
+		m_Controller = controller;
+		m_StoneComponents = new StoneComponent[m_Controller.getRowCount()][m_Controller.getColumnCount()];
 
+		buttonFrame = new ButtonFrame();
 		loadingScreenRoutine();
 		createMenuBar();
 		layoutRoutine();
@@ -39,13 +42,11 @@ public class ViewLife extends Frame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
+				buttonFrame.dispose();
 				dispose();
+				m_Controller.killThread();
 			}
 
-			@Override
-			public void windowClosed(WindowEvent e) {
-				System.exit(0);
-			}
 		});
 		setVisible(true);
 	}
@@ -63,10 +64,10 @@ public class ViewLife extends Frame {
 
 	@Override
 	public void paint(Graphics g) {
-		for (int i = 0; i < stoneComponents.length; ++i) {
-			for (int j = 0; j < stoneComponents[i].length; j++) {
-				stoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
-				stoneComponents[i][j].update(stoneComponents[i][j].getGraphics());
+		for (int i = 0; i < m_StoneComponents.length; ++i) {
+			for (int j = 0; j < m_StoneComponents[i].length; j++) {
+				m_StoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
+				m_StoneComponents[i][j].update(m_StoneComponents[i][j].getGraphics());
 			}
 		}
 	}
@@ -98,21 +99,44 @@ public class ViewLife extends Frame {
 	private void determineStaticFields(int i, int j) {
 		if (m_model.getStone(i, j) instanceof AlwaysStone || m_model.getStone(i, j) instanceof NeverStone) {
 
-			stoneComponents[i][j].setStatic();
+			m_StoneComponents[i][j].setStatic();
 		}
 
+	}
+
+	public void newFieldSize() {
+		m_pausBtn.setLabel("continue");
+		m_model.generateNewStoneArray(m_Controller.getRowCount(), m_Controller.getColumnCount(), m_Controller.getPercentStatic());
+		m_StoneComponents = new StoneComponent[m_Controller.getRowCount()][m_Controller.getColumnCount()];
+		Dimension oldD = m_FieldPanel.getSize();
+		m_FieldPanel.removeAll();
+		m_FieldPanel.revalidate();
+		m_FieldPanel.repaint();
+		m_FieldPanel.setLayout(new GridLayout(m_Controller.getRowCount(), m_Controller.getColumnCount(), 1, 1));
+		for (int i = 0; i < m_StoneComponents.length; ++i) {
+			for (int j = 0; j < m_StoneComponents[i].length; j++) {
+				m_StoneComponents[i][j] = new StoneComponent();
+				determineStaticFields(i, j);
+				m_FieldPanel.add(m_StoneComponents[i][j]);
+			}
+		}
+		m_FieldPanel.setPreferredSize(oldD);		
+		pack();				
+		repaint();
 	}
 
 	private void createMenuBar() {
 		MenuBar menuBar = new MenuBar();
 		Menu fileMenu = new Menu("File");
 		Menu loadMenu = new Menu("Presets");
+		Menu windowMenu = new Menu("Window");
 		MenuItem newItem = new MenuItem("New");
 		MenuItem saveItem = new MenuItem("Save");
 		MenuItem loadItem = new MenuItem("Load");
+		MenuItem nextCycleItem = new MenuItem("Display next cycle");
 		MenuItem quitItem = new MenuItem("Quit");
 		newItem.addActionListener(e -> {
-			m_model.resetField();
+			m_Controller.restartGame();
 		});
 		saveItem.addActionListener(e -> {
 
@@ -120,13 +144,19 @@ public class ViewLife extends Frame {
 		loadItem.addActionListener(e -> {
 
 		});
+		nextCycleItem.addActionListener(e -> {
+			oneMoreAction();
+		});
 		quitItem.addActionListener(e -> {
+			buttonFrame.dispose();
 			dispose();
-			System.exit(0);
+			m_Controller.killThread();
+
 		});
 		fileMenu.add(newItem);
 		fileMenu.add(saveItem);
 		fileMenu.add(loadItem);
+		fileMenu.add(nextCycleItem);
 		fileMenu.addSeparator();
 		fileMenu.add(quitItem);
 		MenuItem gunItem = new MenuItem("Gun");
@@ -139,8 +169,70 @@ public class ViewLife extends Frame {
 		});
 		loadMenu.add(gunItem);
 		loadMenu.add(specialItem);
+
+		MenuItem centerItem = new MenuItem("center Screen");
+		MenuItem maximizeItem = new MenuItem("maximize");
+		MenuItem iconifyItem = new MenuItem("iconify");
+		Menu changeSizeMenu = new Menu("change screen size");
+		MenuItem smallFieldItem = new MenuItem("small");
+		MenuItem mediumFieldItem = new MenuItem("medium");
+		MenuItem largeFieldItem = new MenuItem("large");
+		changeSizeMenu.add(smallFieldItem);
+		changeSizeMenu.add(mediumFieldItem);
+		changeSizeMenu.add(largeFieldItem);
+		centerItem.addActionListener(e -> {
+			// ;in ;? exam?
+			// setLocationRelativeTo(null);
+			setLocation(m_SCREEN_WIDTH - (int) getSize().getWidth() / 2,
+					m_SCREEN_HEIGHT - (int) getSize().getHeight() / 2);
+		});
+		maximizeItem.addActionListener(e -> {
+			// setBounds(0,0, (int) getToolkit().getScreenSize().getWidth(),
+			// (int) getToolkit().getScreenSize().getHeight());
+			// ;in ;? shortcut to maximize the window; exam?!
+			setExtendedState(MAXIMIZED_BOTH);
+		});
+		iconifyItem.addActionListener(e -> {
+			setExtendedState(ICONIFIED);
+		});
+		smallFieldItem.addActionListener(e -> {
+			setSize((int) (m_SCREEN_WIDTH / 2.25), (int) (m_SCREEN_HEIGHT / 1.7));
+			setLocationRelativeTo(null);
+		});
+		mediumFieldItem.addActionListener(e -> {
+			setSize((int) (m_SCREEN_WIDTH / 1.8), (int) (m_SCREEN_HEIGHT / 1.5));
+			setLocationRelativeTo(null);
+		});
+		largeFieldItem.addActionListener(e -> {
+			setSize((int) (m_SCREEN_WIDTH / 1.25), (int) (m_SCREEN_HEIGHT / 1.1));
+			setLocationRelativeTo(null);
+		});
+		Menu stoneMenu = new Menu("Stone field");
+		Menu numberOfStoneMenu = new Menu("number of stones");
+		MenuItem fewItem = new MenuItem("10 x 20");
+		MenuItem decentItem = new MenuItem(" 25 x 40");
+		MenuItem muchItem = new MenuItem("80 x 100");
+		fewItem.addActionListener(e -> {
+			m_Controller.newFieldSize(10, 20);
+		});
+		decentItem.addActionListener(e -> {
+			m_Controller.newFieldSize(25, 40);
+		});
+		muchItem.addActionListener(e -> {
+			m_Controller.newFieldSize(80, 100);
+		});
+		windowMenu.add(centerItem);
+		windowMenu.add(maximizeItem);
+		windowMenu.add(iconifyItem);
+		windowMenu.add(changeSizeMenu);
+		numberOfStoneMenu.add(fewItem);
+		numberOfStoneMenu.add(decentItem);
+		numberOfStoneMenu.add(muchItem);
+		stoneMenu.add(numberOfStoneMenu);
 		menuBar.add(fileMenu);
 		menuBar.add(loadMenu);
+		menuBar.add(windowMenu);
+		menuBar.add(stoneMenu);
 		setMenuBar(menuBar);
 	}
 
@@ -175,16 +267,16 @@ public class ViewLife extends Frame {
 		add(BorderLayout.SOUTH, btmPanel);
 		add(BorderLayout.EAST, rPanel);
 
-		Panel fieldPanel = new Panel();
-		fieldPanel.setLayout(new GridLayout(m_model.getRowCount(), m_model.getColumnCount(), 1, 1));
-		for (int i = 0; i < stoneComponents.length; ++i) {
-			for (int j = 0; j < stoneComponents[i].length; j++) {
-				stoneComponents[i][j] = new StoneComponent();
+		m_FieldPanel = new Panel();
+		m_FieldPanel.setLayout(new GridLayout(m_Controller.getRowCount(), m_Controller.getColumnCount(), 1, 1));
+		for (int i = 0; i < m_StoneComponents.length; ++i) {
+			for (int j = 0; j < m_StoneComponents[i].length; j++) {
+				m_StoneComponents[i][j] = new StoneComponent();
 				determineStaticFields(i, j);
-				fieldPanel.add(stoneComponents[i][j]);
+				m_FieldPanel.add(m_StoneComponents[i][j]);
 			}
 		}
-		add(BorderLayout.CENTER, fieldPanel);
+		add(BorderLayout.CENTER, m_FieldPanel);
 	}
 
 	private void loadingScreenRoutine() {
@@ -259,7 +351,7 @@ public class ViewLife extends Frame {
 	}
 
 	private void applyListeners() {
-		m_startBtn.addActionListener(e -> {		
+		m_startBtn.addActionListener(e -> {
 			if (!m_Controller.getThread().isAlive())
 				m_Controller.getThread().start();
 			m_startBtn.setEnabled(false);
@@ -271,19 +363,30 @@ public class ViewLife extends Frame {
 				m_pausBtn.setLabel(("continue"));
 				// ;in
 				// this.revalidate();
-			} else {				
+			} else {
 				m_Controller.continueGame();
 				((Button) e.getSource()).setLabel("pause");
 				// this.revalidate();
 			}
 		});
-		
-		m_restartBtn.addActionListener(e->{
+
+		m_restartBtn.addActionListener(e -> {
 			// if (!m_Controller.getThread().isAlive())
-				m_Controller.restartGame();
-				m_pausBtn.setLabel("continue");
+			m_Controller.restartGame();
+			m_pausBtn.setLabel("continue");
 		});
 
+	}
+
+	private void oneMoreAction() {
+		if (m_Controller.isRunning()) {
+			m_Controller.stopGame();
+			// ;in remember for exam LUL
+			// ((Button) e.getSource()).setLabel("one");
+			m_pausBtn.setLabel("continue");
+		} else {
+			m_Controller.singleStep();
+		}
 	}
 
 	private class ButtonFrame extends Frame {
@@ -291,14 +394,7 @@ public class ViewLife extends Frame {
 			setSize(300, 200);
 			Button oneMore = new Button("One more cycle");
 			oneMore.addActionListener(e -> {
-				if (m_Controller.isRunning()) {
-					m_Controller.stopGame();					
-					// ;in remember for exam LUL
-					//((Button) e.getSource()).setLabel("one");
-					 m_pausBtn.setLabel("continue");						
-				}else{
-					m_Controller.singleStep();
-				}
+				oneMoreAction();
 			});
 			add(oneMore);
 			addWindowListener(new WindowAdapter() {
@@ -313,3 +409,5 @@ public class ViewLife extends Frame {
 	}
 
 }
+
+

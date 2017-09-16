@@ -1,22 +1,32 @@
 package lifeplus;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /*
  * ;? = design questions
  * ;in = funny constructs etc
+ * maximize window:	setExtendedState(MAXIMIZED_BOTH);
+ * 
+ * cast lambda
+ * m_Controller.setSleepTime(((JSlider) e.getSource()).getValue());
  */
 public class ControllerLife {
-	private int m_SleepTime = 600;
+	private int m_SleepTime = 500;
 	private ModelLife m_ModelLife;
 	private ViewLife m_ViewLife;
 	private Thread m_GameThread;
+	private int m_RowCount = 100;
+	private int m_ColumnCount = 80;
+	private double m_PercentStatic = 0.0;
 	// ;in  volatile
-	volatile private boolean m_StopThread;
-	volatile private boolean m_Reset;
+	volatile private AtomicBoolean m_StopThread = new AtomicBoolean(false);
+	volatile private AtomicBoolean m_Reset = new AtomicBoolean(false);
+	volatile private AtomicBoolean m_DestroyThread = new AtomicBoolean(false);
+	volatile private AtomicBoolean m_resizeField = new AtomicBoolean(false);
 
 	public ControllerLife() {
-		m_ModelLife = new ModelLife(100, 80, 00);
-		m_ViewLife = new ViewLife(m_ModelLife);
-		m_ViewLife.setController(this);
+		m_ModelLife = new ModelLife(m_RowCount, m_ColumnCount, m_PercentStatic);
+		m_ViewLife = new ViewLife(m_ModelLife, this);
 		m_GameThread = new Thread() {
 			@Override
 			public void run() {
@@ -32,42 +42,85 @@ public class ControllerLife {
 
 	public void runGame() throws InterruptedException {
 		while (true) {
+			if(m_DestroyThread.get())
+				return;
 			// System.out.println(m_StopThread);
-			if(m_Reset){
+			if(m_Reset.get()){
 				stopGame();	
 				m_ModelLife.hardReset();
 				m_ViewLife.repaint();
-				m_Reset = false;
+				m_Reset.set(false);
 			}
 			// ;? is there a different option to multiple flags?
-			if (!m_StopThread) {			
+			if (!m_StopThread.get()) {
 				Thread.sleep(m_SleepTime);			
 				m_ModelLife.nextCycle();				
 				m_ViewLife.repaint();
 			}
+			if(m_resizeField.get()){
+				// ;? ;in cancer
+				Thread.sleep(300);
+				m_ViewLife.newFieldSize();	
+				m_resizeField.set(false);
+			}
 		}
 	} 	
+	
+	public void newFieldSize(int rows, int columns) {
+		stopGame();			
+		setRowCount(rows);
+		setColumnCount(columns);		
+		m_resizeField.set(true);
+	}
+	
 	public void singleStep(){
 		m_ModelLife.nextCycle();				
 		m_ViewLife.repaint();
 	}
-
+	public void killThread(){
+		m_DestroyThread.set(true);
+	}
 	public void setSleepTime(int time) {
 		m_SleepTime = time;
 	}
 	public boolean isRunning(){
-		return !m_StopThread;
+		return !m_StopThread.get();
 	}
 	public void stopGame(){
-		m_StopThread = true;
+		m_StopThread.set(true);
 	}
 	public void continueGame(){
-		m_StopThread = false;
+		m_StopThread.set(false);
 	}
 	public void restartGame(){
-		m_Reset = true;
+		m_Reset.set(true);
 	}
 	public Thread getThread() {
 		return m_GameThread;
 	}
+
+	public int getRowCount() {
+		return m_RowCount;
+	}
+
+	public void setRowCount(int m_RowCount) {
+		this.m_RowCount = m_RowCount;
+	}
+
+	public int getColumnCount() {
+		return m_ColumnCount;
+	}
+
+	public void setColumnCount(int m_ColumnCount) {
+		this.m_ColumnCount = m_ColumnCount;
+	}
+
+	public double getPercentStatic() {
+		return m_PercentStatic;
+	}
+
+	public void setPercentStatic(double m_PercentStatic) {
+		this.m_PercentStatic = m_PercentStatic;
+	}
+	
 }

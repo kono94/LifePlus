@@ -19,6 +19,14 @@ public class ModelLife {
 		createField();
 		refrenceAllNeighbours();
 	}
+	
+	public void generateNewStoneArray(int rows, int columns, double ChanceOfStaticFields){
+		m_RowCount = rows;
+		m_ColumnCount = columns;
+		m_ChanceOfStaticFields = ChanceOfStaticFields;
+		m_Stones = new Stone[m_RowCount][m_ColumnCount];
+		initilize();
+	}
 	private void createField() {
 		int alive = 0;
 		int dead = 0;
@@ -75,6 +83,7 @@ public class ModelLife {
 		{
 			for (int x = 0; x < m_Stones[y].length; ++x)
 			{
+				
 				tempNext[y][x] = m_Stones[y][x].aliveNextCycle();		
 				tempDiseaseNext[y][x] = m_Stones[y][x].diseaseIndexNextCycle();
 			}
