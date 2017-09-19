@@ -34,7 +34,7 @@ public class ViewLife extends Frame {
 
 		buttonFrame = new ButtonFrame();
 		loadingScreenRoutine();
-		
+
 		layoutRoutine();
 		createMenuBar();
 		applyListeners();
@@ -44,9 +44,16 @@ public class ViewLife extends Frame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				buttonFrame.dispose();
-				dispose();
-				m_Controller.killThread();
+				m_Controller.stopGame();
+				ClosingDialog closingDialog = new ClosingDialog(ViewLife.this, "Do you really want to quit?");
+				if (closingDialog.m_DialogResult) {
+					buttonFrame.dispose();
+					dispose();
+					m_Controller.killThread();
+				}else{
+					m_Controller.continueGame();
+				}
+
 			}
 
 		});
@@ -65,7 +72,7 @@ public class ViewLife extends Frame {
 	}
 
 	@Override
-	public void paint(Graphics g) {		
+	public void paint(Graphics g) {
 		for (int i = 0; i < m_StoneComponents.length; ++i) {
 			for (int j = 0; j < m_StoneComponents[i].length; j++) {
 				m_StoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
@@ -109,7 +116,8 @@ public class ViewLife extends Frame {
 
 	public void newFieldSize() {
 		m_pausBtn.setLabel("continue");
-		m_model.generateNewStoneArray(m_Controller.getRowCount(), m_Controller.getColumnCount(), m_Controller.getPercentStatic());
+		m_model.generateNewStoneArray(m_Controller.getRowCount(), m_Controller.getColumnCount(),
+				m_Controller.getPercentStatic());
 		m_StoneComponents = new StoneComponent[m_Controller.getRowCount()][m_Controller.getColumnCount()];
 		Dimension oldD = m_FieldPanel.getSize();
 		m_FieldPanel.removeAll();
@@ -123,8 +131,8 @@ public class ViewLife extends Frame {
 				m_FieldPanel.add(m_StoneComponents[i][j]);
 			}
 		}
-		m_FieldPanel.setPreferredSize(oldD);		
-		pack();				
+		m_FieldPanel.setPreferredSize(oldD);
+		pack();
 		repaint();
 		m_Controller.setResizing(false);
 	}
@@ -186,9 +194,10 @@ public class ViewLife extends Frame {
 		changeSizeMenu.add(largeFieldItem);
 		centerItem.addActionListener(e -> {
 			// ;in ;? exam?
-			// setLocationRelativeTo(null);
-			setLocation(m_SCREEN_WIDTH - (int) getSize().getWidth() / 2,
-					m_SCREEN_HEIGHT - (int) getSize().getHeight() / 2);
+			setLocationRelativeTo(null);
+			// getSize() only works after pack, I guess?
+			//setLocation(m_SCREEN_WIDTH - (int) getSize().getWidth() / 2,
+			//		m_SCREEN_HEIGHT - (int) getSize().getHeight() / 2);
 		});
 		maximizeItem.addActionListener(e -> {
 			// setBounds(0,0, (int) getToolkit().getScreenSize().getWidth(),
@@ -212,6 +221,7 @@ public class ViewLife extends Frame {
 			setLocationRelativeTo(null);
 		});
 		Menu stoneMenu = new Menu("Stone field");
+		MenuItem customSizeMenuItem = new MenuItem("Custom size");
 		Menu numberOfStoneMenu = new Menu("number of stones");
 		MenuItem fewItem = new MenuItem("10 x 20");
 		MenuItem decentItem = new MenuItem(" 25 x 40");
@@ -223,7 +233,7 @@ public class ViewLife extends Frame {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			
+
 		});
 		decentItem.addActionListener(e -> {
 			try {
@@ -241,6 +251,11 @@ public class ViewLife extends Frame {
 				e1.printStackTrace();
 			}
 		});
+		
+		customSizeMenuItem.addActionListener(e->{
+			StoneDialog stoneDialog = new StoneDialog(this);
+			
+		});
 		windowMenu.add(centerItem);
 		windowMenu.add(maximizeItem);
 		windowMenu.add(iconifyItem);
@@ -248,26 +263,28 @@ public class ViewLife extends Frame {
 		numberOfStoneMenu.add(fewItem);
 		numberOfStoneMenu.add(decentItem);
 		numberOfStoneMenu.add(muchItem);
-		stoneMenu.add(numberOfStoneMenu);
+		stoneMenu.add(customSizeMenuItem);
+		stoneMenu.add(numberOfStoneMenu);		
 		menuBar.add(fileMenu);
 		menuBar.add(loadMenu);
 		menuBar.add(windowMenu);
 		menuBar.add(stoneMenu);
 		setMenuBar(menuBar);
-		
-		 pop = new PopupMenu();		
-		 pop.add("kee");
-		 add(pop);
-		 enableEvents(AWTEvent.MOUSE_EVENT_MASK);
+
+		pop = new PopupMenu();
+		pop.add("kee");
+		add(pop);
+		enableEvents(AWTEvent.MOUSE_EVENT_MASK);
 	}
-	
-	protected void processMouseEvent(MouseEvent e){
+
+	protected void processMouseEvent(MouseEvent e) {
 		System.out.println("dd");
-		if(e.isPopupTrigger()){
+		if (e.isPopupTrigger()) {
 			pop.show(e.getComponent(), e.getX(), e.getY());
 		}
 		super.processMouseEvent(e);
 	}
+
 	private void layoutRoutine() {
 		setLayout(new BorderLayout()); // Top Layout Manager
 		Panel btmPanel = new Panel();
@@ -440,6 +457,91 @@ public class ViewLife extends Frame {
 		}
 	}
 
+	private class ClosingDialog extends Dialog {
+		public boolean m_DialogResult;
+
+		public ClosingDialog(Frame owner, String msg) {
+			super(owner, "", true);
+			setLayout(new BorderLayout());
+			setResizable(false);
+			add(BorderLayout.CENTER, new Label(msg));
+			Panel buttonPanel = new Panel();
+			buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+			add(BorderLayout.SOUTH, buttonPanel);
+			Button b = new Button("Yes");
+			b.addActionListener(e -> {
+				m_DialogResult = true;
+				dispose();
+			});
+			buttonPanel.add(b);
+			Button a = new Button("No");
+			a.addActionListener(e -> {
+				m_DialogResult = false;
+				dispose();
+			});
+			buttonPanel.add(a);
+			addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent e) {
+					dispose();				
+				}
+			});
+			pack();		
+			Point p = owner.getLocation();
+			setLocation(p.x + (int)owner.getSize().getWidth()/2 - (int)getSize().getWidth()/2, p.y + (int)owner.getSize().getHeight()/2 - (int)getSize().getHeight()/2);
+			setVisible(true);
+		
+		
+		}
+	}
+	private class StoneDialog extends Dialog{
+		public StoneDialog(Frame owner) {
+			super(owner, "", false);
+			setLayout(new BorderLayout());
+			Panel input = new Panel();
+			input.setLayout(new GridLayout(2,2));		
+			setResizable(false);
+			input.add(new Label("Rows:"));
+			TextField rowText = new TextField();
+			input.add(rowText);
+			input.add(new Label("Columns:"));
+			TextField columnText = new TextField();
+			input.add(columnText);
+			add(BorderLayout.CENTER, input);
+			Panel buttonPanel = new Panel();
+			buttonPanel.setLayout(new FlowLayout());
+			Button confirmButton = new Button("Confirm");
+			Label errorLabel = new Label();
+			errorLabel.setPreferredSize(new Dimension(200,50));;
+			errorLabel.setForeground(Color.RED);
+			confirmButton.addActionListener(e->{
+				try {					
+					m_Controller.newFieldSize(Integer.parseInt(rowText.getText()), Integer.parseInt(columnText.getText()));
+					dispose();
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					errorLabel.setText("Error, not a numeric input");
+				}
+			});		
+			Button cancelButton = new Button("Confirm");
+			cancelButton.addActionListener(e->{
+				dispose();
+			});		
+			buttonPanel.add(confirmButton);
+			buttonPanel.add(cancelButton);			
+			buttonPanel.add(errorLabel);
+			addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent e) {
+					dispose();				
+				}
+			});
+			add(BorderLayout.SOUTH, buttonPanel);
+			pack();		
+			Point p = owner.getLocation();
+			setLocation(p.x + (int)owner.getSize().getWidth()/2 - (int)getSize().getWidth()/2, p.y + (int)owner.getSize().getHeight()/2 - (int)getSize().getHeight()/2);
+			setVisible(true);
+		}
+	}
+
 }
-
-
