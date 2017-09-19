@@ -65,13 +65,14 @@ public class ViewLife extends Frame {
 	}
 
 	@Override
-	public void paint(Graphics g) {
+	public void paint(Graphics g) {		
 		for (int i = 0; i < m_StoneComponents.length; ++i) {
 			for (int j = 0; j < m_StoneComponents[i].length; j++) {
 				m_StoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
 				m_StoneComponents[i][j].update(m_StoneComponents[i][j].getGraphics());
 			}
 		}
+		m_Controller.setPaintBlock(false);
 	}
 
 	private Color determineColor(Stone stone) {
@@ -125,6 +126,7 @@ public class ViewLife extends Frame {
 		m_FieldPanel.setPreferredSize(oldD);		
 		pack();				
 		repaint();
+		m_Controller.setResizing(false);
 	}
 
 	private void createMenuBar() {
@@ -215,14 +217,29 @@ public class ViewLife extends Frame {
 		MenuItem decentItem = new MenuItem(" 25 x 40");
 		MenuItem muchItem = new MenuItem("80 x 100");
 		fewItem.addActionListener(e -> {
-			m_Controller.newFieldSize(10, 20);
+			try {
+				m_Controller.newFieldSize(10, 20);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			
 		});
 		decentItem.addActionListener(e -> {
-			m_Controller.newFieldSize(25, 40);
+			try {
+				m_Controller.newFieldSize(25, 40);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		});
 		muchItem.addActionListener(e -> {
-			m_Controller.newFieldSize(80, 100);
+			try {
+				m_Controller.newFieldSize(80, 100);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		});
 		windowMenu.add(centerItem);
 		windowMenu.add(maximizeItem);

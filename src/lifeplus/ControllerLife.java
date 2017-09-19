@@ -18,11 +18,12 @@ public class ControllerLife {
 	private int m_RowCount = 100;
 	private int m_ColumnCount = 80;
 	private double m_PercentStatic = 0.0;
-	// ;in  volatile
+	// ;in volatile
 	volatile private AtomicBoolean m_StopThread = new AtomicBoolean(false);
 	volatile private AtomicBoolean m_Reset = new AtomicBoolean(false);
-	volatile private AtomicBoolean m_DestroyThread = new AtomicBoolean(false);
-	volatile private AtomicBoolean m_resizeField = new AtomicBoolean(false);
+	volatile private AtomicBoolean m_DestroyThread = new AtomicBoolean(false);	
+	volatile private AtomicBoolean m_PaintBlocks = new AtomicBoolean(false);
+	volatile private AtomicBoolean m_CurrentlyResizing = new AtomicBoolean(false);
 
 	public ControllerLife() {
 		m_ModelLife = new ModelLife(m_RowCount, m_ColumnCount, m_PercentStatic);
@@ -30,7 +31,7 @@ public class ControllerLife {
 		m_GameThread = new Thread() {
 			@Override
 			public void run() {
-				try { 
+				try {
 					runGame();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -42,58 +43,66 @@ public class ControllerLife {
 
 	public void runGame() throws InterruptedException {
 		while (true) {
-			if(m_DestroyThread.get())
+			if (m_DestroyThread.get())
 				return;
 			// System.out.println(m_StopThread);
-			if(m_Reset.get()){
-				stopGame();	
+			if (m_Reset.get()) {
+				stopGame();
 				m_ModelLife.hardReset();
+				m_PaintBlocks.set(true);
 				m_ViewLife.repaint();
 				m_Reset.set(false);
 			}
 			// ;? is there a different option to multiple flags?
-			if (!m_StopThread.get()) {
-				Thread.sleep(m_SleepTime);			
-				m_ModelLife.nextCycle();				
-				m_ViewLife.repaint();
-			}
-			if(m_resizeField.get()){
-				// ;? ;in cancer
-				Thread.sleep(300);
-				m_ViewLife.newFieldSize();	
-				m_resizeField.set(false);
-			}
+			if (!m_StopThread.get() && !m_PaintBlocks.get() && !m_CurrentlyResizing.get()) {			
+					Thread.sleep(m_SleepTime);
+					m_ModelLife.nextCycle();
+					m_PaintBlocks.set(true);
+					m_ViewLife.repaint();				
+			}		
 		}
-	} 	
-	
-	public void newFieldSize(int rows, int columns) {
-		stopGame();			
-		setRowCount(rows);
-		setColumnCount(columns);		
-		m_resizeField.set(true);
 	}
-	
-	public void singleStep(){
-		m_ModelLife.nextCycle();				
+
+	public void newFieldSize(int rows, int columns) throws InterruptedException {
+		stopGame();
+		setRowCount(rows);
+		setColumnCount(columns);
+		m_CurrentlyResizing.set(true);
+		m_ViewLife.newFieldSize();	
+	}
+	public void setResizing(boolean b){
+		m_CurrentlyResizing.set(b);
+	}
+	public void singleStep() {
+		m_ModelLife.nextCycle();
 		m_ViewLife.repaint();
 	}
-	public void killThread(){
+
+	public void killThread() {
 		m_DestroyThread.set(true);
 	}
+
 	public void setSleepTime(int time) {
 		m_SleepTime = time;
 	}
-	public boolean isRunning(){
+
+	public boolean isRunning() {
 		return !m_StopThread.get();
 	}
-	public void stopGame(){
+
+	public void stopGame() {
 		m_StopThread.set(true);
 	}
-	public void continueGame(){
+
+	public void continueGame() {
 		m_StopThread.set(false);
 	}
-	public void restartGame(){
+
+	public void restartGame() {
 		m_Reset.set(true);
+	}
+	public void setPaintBlock(boolean b){
+		m_PaintBlocks.set(b);
 	}
 	public Thread getThread() {
 		return m_GameThread;
@@ -122,5 +131,5 @@ public class ControllerLife {
 	public void setPercentStatic(double m_PercentStatic) {
 		this.m_PercentStatic = m_PercentStatic;
 	}
-	
+
 }
