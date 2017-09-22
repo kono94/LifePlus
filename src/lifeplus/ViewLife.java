@@ -24,6 +24,7 @@ public class ViewLife extends Frame {
 	private ButtonFrame buttonFrame;
 	private Panel m_FieldPanel;
 	private PopupMenu pop;
+	volatile private Color m_StoneColor = Color.BLACK;
 
 	public ViewLife(ModelLife model, ControllerLife controller) {
 		m_SCREEN_WIDTH = (int) getToolkit().getScreenSize().getWidth();
@@ -44,16 +45,7 @@ public class ViewLife extends Frame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				m_Controller.stopGame();
-				ClosingDialog closingDialog = new ClosingDialog(ViewLife.this, "Do you really want to quit?");
-				if (closingDialog.m_DialogResult) {
-					buttonFrame.dispose();
-					dispose();
-					m_Controller.killThread();
-				}else{
-					m_Controller.continueGame();
-				}
-
+				closingRoutine();
 			}
 
 		});
@@ -73,6 +65,7 @@ public class ViewLife extends Frame {
 
 	@Override
 	public void paint(Graphics g) {
+
 		for (int i = 0; i < m_StoneComponents.length; ++i) {
 			for (int j = 0; j < m_StoneComponents[i].length; j++) {
 				m_StoneComponents[i][j].setColor(determineColor(m_model.getStone(i, j)));
@@ -100,10 +93,11 @@ public class ViewLife extends Frame {
 		// return Color.GREEN;
 		// return Color.GREEN;
 		int roundsAlive = stone.getRoundsAlive();
+
 		if (roundsAlive == -1)
 			return Color.WHITE;
 		else
-			return Color.BLACK;
+			return m_StoneColor;
 	}
 
 	private void determineStaticFields(int i, int j) {
@@ -127,6 +121,7 @@ public class ViewLife extends Frame {
 		for (int i = 0; i < m_StoneComponents.length; ++i) {
 			for (int j = 0; j < m_StoneComponents[i].length; j++) {
 				m_StoneComponents[i][j] = new StoneComponent();
+				m_StoneComponents[i][j].setMinimumSize(new Dimension(40, 40));
 				determineStaticFields(i, j);
 				m_FieldPanel.add(m_StoneComponents[i][j]);
 			}
@@ -151,7 +146,7 @@ public class ViewLife extends Frame {
 			m_Controller.restartGame();
 		});
 		saveItem.addActionListener(e -> {
-
+			new SettingsDialog(this);
 		});
 		loadItem.addActionListener(e -> {
 
@@ -160,9 +155,7 @@ public class ViewLife extends Frame {
 			oneMoreAction();
 		});
 		quitItem.addActionListener(e -> {
-			buttonFrame.dispose();
-			dispose();
-			m_Controller.killThread();
+			closingRoutine();
 
 		});
 		fileMenu.add(newItem);
@@ -196,8 +189,8 @@ public class ViewLife extends Frame {
 			// ;in ;? exam?
 			setLocationRelativeTo(null);
 			// getSize() only works after pack, I guess?
-			//setLocation(m_SCREEN_WIDTH - (int) getSize().getWidth() / 2,
-			//		m_SCREEN_HEIGHT - (int) getSize().getHeight() / 2);
+			// setLocation(m_SCREEN_WIDTH - (int) getSize().getWidth() / 2,
+			// m_SCREEN_HEIGHT - (int) getSize().getHeight() / 2);
 		});
 		maximizeItem.addActionListener(e -> {
 			// setBounds(0,0, (int) getToolkit().getScreenSize().getWidth(),
@@ -251,10 +244,10 @@ public class ViewLife extends Frame {
 				e1.printStackTrace();
 			}
 		});
-		
-		customSizeMenuItem.addActionListener(e->{
+
+		customSizeMenuItem.addActionListener(e -> {
 			StoneDialog stoneDialog = new StoneDialog(this);
-			
+
 		});
 		windowMenu.add(centerItem);
 		windowMenu.add(maximizeItem);
@@ -264,7 +257,7 @@ public class ViewLife extends Frame {
 		numberOfStoneMenu.add(decentItem);
 		numberOfStoneMenu.add(muchItem);
 		stoneMenu.add(customSizeMenuItem);
-		stoneMenu.add(numberOfStoneMenu);		
+		stoneMenu.add(numberOfStoneMenu);
 		menuBar.add(fileMenu);
 		menuBar.add(loadMenu);
 		menuBar.add(windowMenu);
@@ -300,24 +293,14 @@ public class ViewLife extends Frame {
 		m_restartBtn = new Button("reset");
 		btmPanel.add(m_restartBtn);
 
-		JSlider slider = new JSlider(0, 500, 300);
-		slider.setMajorTickSpacing(100);
-		slider.createStandardLabels(100);
-		slider.setPaintLabels(true);
-		slider.setPaintTicks(true);
-
-		// ;? View changes static variable in controller
-		slider.addChangeListener(e -> {
-			m_Controller.setSleepTime(((JSlider) e.getSource()).getValue());
-		});
-		slider.setPreferredSize(new Dimension(500, 80));
-		btmPanel.add(slider);
 		rPanel.add(new Button("ok"));
 		add(BorderLayout.SOUTH, btmPanel);
 		add(BorderLayout.EAST, rPanel);
-
+		ScrollPane scrollPane = new ScrollPane(ScrollPane.SCROLLBARS_ALWAYS);
 		m_FieldPanel = new Panel();
+		scrollPane.add(m_FieldPanel);
 		m_FieldPanel.setLayout(new GridLayout(m_Controller.getRowCount(), m_Controller.getColumnCount(), 1, 1));
+
 		for (int i = 0; i < m_StoneComponents.length; ++i) {
 			for (int j = 0; j < m_StoneComponents[i].length; j++) {
 				m_StoneComponents[i][j] = new StoneComponent();
@@ -325,7 +308,7 @@ public class ViewLife extends Frame {
 				m_FieldPanel.add(m_StoneComponents[i][j]);
 			}
 		}
-		add(BorderLayout.CENTER, m_FieldPanel);
+		add(scrollPane, BorderLayout.CENTER);
 	}
 
 	private void loadingScreenRoutine() {
@@ -457,6 +440,18 @@ public class ViewLife extends Frame {
 		}
 	}
 
+	public void closingRoutine() {
+		m_Controller.stopGame();
+		ClosingDialog closingDialog = new ClosingDialog(ViewLife.this, "Do you really want to quit?");
+		if (closingDialog.m_DialogResult) {
+			buttonFrame.dispose();
+			dispose();
+			m_Controller.killThread();
+		} else {
+			m_Controller.continueGame();
+		}
+	}
+
 	private class ClosingDialog extends Dialog {
 		public boolean m_DialogResult;
 
@@ -483,23 +478,24 @@ public class ViewLife extends Frame {
 			addWindowListener(new WindowAdapter() {
 				@Override
 				public void windowClosing(WindowEvent e) {
-					dispose();				
+					dispose();
 				}
 			});
-			pack();		
+			pack();
 			Point p = owner.getLocation();
-			setLocation(p.x + (int)owner.getSize().getWidth()/2 - (int)getSize().getWidth()/2, p.y + (int)owner.getSize().getHeight()/2 - (int)getSize().getHeight()/2);
+			setLocation(p.x + (int) owner.getSize().getWidth() / 2 - (int) getSize().getWidth() / 2,
+					p.y + (int) owner.getSize().getHeight() / 2 - (int) getSize().getHeight() / 2);
 			setVisible(true);
-		
-		
+
 		}
 	}
-	private class StoneDialog extends Dialog{
+
+	private class StoneDialog extends Dialog {
 		public StoneDialog(Frame owner) {
 			super(owner, "", false);
 			setLayout(new BorderLayout());
 			Panel input = new Panel();
-			input.setLayout(new GridLayout(2,2));		
+			input.setLayout(new GridLayout(2, 2));
 			setResizable(false);
 			input.add(new Label("Rows:"));
 			TextField rowText = new TextField();
@@ -512,34 +508,116 @@ public class ViewLife extends Frame {
 			buttonPanel.setLayout(new FlowLayout());
 			Button confirmButton = new Button("Confirm");
 			Label errorLabel = new Label();
-			errorLabel.setPreferredSize(new Dimension(200,50));;
+			errorLabel.setPreferredSize(new Dimension(200, 50));
+			;
 			errorLabel.setForeground(Color.RED);
-			confirmButton.addActionListener(e->{
-				try {					
-					m_Controller.newFieldSize(Integer.parseInt(rowText.getText()), Integer.parseInt(columnText.getText()));
+			confirmButton.addActionListener(e -> {
+				try {
+					m_Controller.newFieldSize(Integer.parseInt(rowText.getText()),
+							Integer.parseInt(columnText.getText()));
 					dispose();
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					errorLabel.setText("Error, not a numeric input");
 				}
-			});		
-			Button cancelButton = new Button("Confirm");
-			cancelButton.addActionListener(e->{
+			});
+			Button cancelButton = new Button("Cancel");
+			cancelButton.addActionListener(e -> {
 				dispose();
-			});		
+			});
 			buttonPanel.add(confirmButton);
-			buttonPanel.add(cancelButton);			
+			buttonPanel.add(cancelButton);
 			buttonPanel.add(errorLabel);
 			addWindowListener(new WindowAdapter() {
 				@Override
 				public void windowClosing(WindowEvent e) {
-					dispose();				
+					dispose();
 				}
 			});
 			add(BorderLayout.SOUTH, buttonPanel);
-			pack();		
+			pack();
 			Point p = owner.getLocation();
-			setLocation(p.x + (int)owner.getSize().getWidth()/2 - (int)getSize().getWidth()/2, p.y + (int)owner.getSize().getHeight()/2 - (int)getSize().getHeight()/2);
+			setLocation(p.x + (int) owner.getSize().getWidth() / 2 - (int) getSize().getWidth() / 2,
+					p.y + (int) owner.getSize().getHeight() / 2 - (int) getSize().getHeight() / 2);
+			setVisible(true);
+		}
+	}
+
+	private class SettingsDialog extends Dialog {
+		public SettingsDialog(Frame owner) {
+			super(owner, "", false);
+			setLayout(new GridLayout(4, 1));
+			Panel colorPanel = new Panel();
+			colorPanel.setLayout(new FlowLayout());
+			colorPanel.add(new Label("Stone color:"));
+			CheckboxGroup colorCheckBoxes = new CheckboxGroup();
+			Checkbox blackBox = new Checkbox("Black", colorCheckBoxes, true);
+			blackBox.addItemListener(e -> {
+				if (e.getStateChange() == ItemEvent.SELECTED)
+					m_StoneColor = Color.BLACK;
+				owner.repaint();
+			});
+			colorPanel.add(blackBox);
+			Checkbox redBox = new Checkbox("Red", colorCheckBoxes, false);
+			redBox.addItemListener(e -> {
+				if (e.getStateChange() == ItemEvent.SELECTED)
+					m_StoneColor = Color.RED;
+				owner.repaint();
+
+			});
+			colorPanel.add(redBox);
+			Checkbox blueBox = new Checkbox("Blue", colorCheckBoxes, false);
+			blueBox.addItemListener(e -> {
+				if (e.getStateChange() == ItemEvent.SELECTED)
+					m_StoneColor = Color.BLUE;
+				owner.repaint();
+
+			});
+			colorPanel.add(blueBox);
+			add(colorPanel);
+			Panel formPanel = new Panel();
+			formPanel.setLayout(new FlowLayout());
+			formPanel.add(new Label("Form of playstone:"));
+			CheckboxGroup formGroup = new CheckboxGroup();
+			Checkbox rectangle = new Checkbox("Rectangle", formGroup, true);
+			rectangle.addItemListener(e -> {
+				for (int i = 0; i < m_StoneComponents.length; i++) {
+					for (int j = 0; j < m_StoneComponents[i].length; j++) {
+						m_StoneComponents[i][j].setOvals(false);
+					}
+				}
+			});
+			formPanel.add(rectangle);
+			Checkbox oval = new Checkbox("Oval", formGroup, false);
+			oval.addItemListener(e->{
+				for (int i = 0; i < m_StoneComponents.length; i++) {
+					for (int j = 0; j < m_StoneComponents[i].length; j++) {
+						m_StoneComponents[i][j].setOvals(true);
+					}
+				}
+			});
+			formPanel.add(oval);
+			add(formPanel);
+			JSlider slider = new JSlider(0, 500, 300);
+			slider.setMajorTickSpacing(100);
+			slider.createStandardLabels(100);
+			slider.setPaintLabels(true);
+			slider.setPaintTicks(true);
+
+			// ;? View changes static variable in controller
+			slider.addChangeListener(e -> {
+				m_Controller.setSleepTime(((JSlider) e.getSource()).getValue());
+			});
+			slider.setPreferredSize(new Dimension(500, 80));
+			add(slider);
+
+			addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent e) {
+					dispose();
+				}
+			});
+			pack();
 			setVisible(true);
 		}
 	}
