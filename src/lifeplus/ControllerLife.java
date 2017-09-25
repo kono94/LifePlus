@@ -17,7 +17,7 @@ public class ControllerLife {
 	private Thread m_GameThread;
 	private int m_RowCount = 100;
 	private int m_ColumnCount = 80;
-	private double m_PercentStatic = 0.0;
+	private double m_PercentStatic = 0.05;
 	// ;in volatile
 	volatile private AtomicBoolean m_StopThread = new AtomicBoolean(false);
 	volatile private AtomicBoolean m_Reset = new AtomicBoolean(false);
